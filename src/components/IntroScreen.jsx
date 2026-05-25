@@ -13,20 +13,20 @@ const KEN_BURNS_VARIANTS = [
 ];
 
 const MONTAGE_FRAMES = [
-  { type: 'image', url: '/hero_mall_night.png', duration: 250, kennBurnsIdx: 0, text: 'LUXURY' },
-  { type: 'image', url: '/reach_aerial.png', duration: 250, kennBurnsIdx: 1, text: 'AVENUE' },
-  { type: 'image', url: '/atrium.png', duration: 250, kennBurnsIdx: 2, text: 'COUTURE' },
-  { type: 'image', url: '/big_snow.png', duration: 250, kennBurnsIdx: 3, text: 'PRESTIGE' },
-  { type: 'image', url: '/dining.png', duration: 250, kennBurnsIdx: 4, text: 'CULTURE' },
-  { type: 'image', url: '/luxury_avenue.png', duration: 250, kennBurnsIdx: 5, text: 'ENERGY' },
-  { type: 'video', url: VIDEO_URLS.montage1, duration: 800, text: 'SCALE' },
-  { type: 'image', url: '/saks_anchor_entrance.png', duration: 250, kennBurnsIdx: 0, text: 'EXCLUSIVE' },
-  { type: 'image', url: '/waterpark.png', duration: 250, kennBurnsIdx: 1, text: 'ENTERTAIN' },
-  { type: 'image', url: '/nick_universe.png', duration: 250, kennBurnsIdx: 2, text: 'EXPERIENCE' },
-  { type: 'image', url: '/events_rink.png', duration: 250, kennBurnsIdx: 3, text: 'STADIUM' },
-  { type: 'image', url: '/obs_wheel.png', duration: 250, kennBurnsIdx: 4, text: 'INNOVATION' },
-  { type: 'image', url: '/flagship_storefront.png', duration: 250, kennBurnsIdx: 5, text: 'PARTNER' },
-  { type: 'video', url: VIDEO_URLS.montage2, duration: 800, text: 'AMERICAN DREAM' },
+  { type: 'image', url: '/hero_mall_night.png', duration: 700, kennBurnsIdx: 0, text: 'LUXURY' },
+  { type: 'image', url: '/reach_aerial.png', duration: 700, kennBurnsIdx: 1, text: 'AVENUE' },
+  { type: 'image', url: '/atrium.png', duration: 700, kennBurnsIdx: 2, text: 'COUTURE' },
+  { type: 'image', url: '/big_snow.png', duration: 700, kennBurnsIdx: 3, text: 'PRESTIGE' },
+  { type: 'image', url: '/dining.png', duration: 700, kennBurnsIdx: 4, text: 'CULTURE' },
+  { type: 'image', url: '/luxury_avenue.png', duration: 700, kennBurnsIdx: 5, text: 'ENERGY' },
+  { type: 'video', url: VIDEO_URLS.montage1, duration: 1400, text: 'SCALE' },
+  { type: 'image', url: '/saks_anchor_entrance.png', duration: 700, kennBurnsIdx: 0, text: 'EXCLUSIVE' },
+  { type: 'image', url: '/waterpark.png', duration: 700, kennBurnsIdx: 1, text: 'ENTERTAIN' },
+  { type: 'image', url: '/nick_universe.png', duration: 700, kennBurnsIdx: 2, text: 'EXPERIENCE' },
+  { type: 'image', url: '/events_rink.png', duration: 700, kennBurnsIdx: 3, text: 'STADIUM' },
+  { type: 'image', url: '/obs_wheel.png', duration: 700, kennBurnsIdx: 4, text: 'INNOVATION' },
+  { type: 'image', url: '/flagship_storefront.png', duration: 700, kennBurnsIdx: 5, text: 'PARTNER' },
+  { type: 'video', url: VIDEO_URLS.montage2, duration: 1800, text: 'AMERICAN DREAM' },
 ];
 
 const HOTSPOTS = [
@@ -43,11 +43,36 @@ export function IntroScreen({ onComplete }) {
   const [mainVideoLoaded, setMainVideoLoaded] = useState(false);
   const [videoTime, setVideoTime] = useState(0);
   const [videoDuration, setVideoDuration] = useState(10);
+  const [loadedCount, setLoadedCount] = useState(0);
+  const totalAssets = MONTAGE_FRAMES.filter(f => f.type === 'image').length;
+  const assetsLoaded = loadedCount >= totalAssets;
 
   const mainVideoRef = useRef(null);
   const outroVideoRef = useRef(null);
   const frameVideoRef1 = useRef(null);
   const frameVideoRef2 = useRef(null);
+
+  // Preload montage images
+  useEffect(() => {
+    const imagesToLoad = MONTAGE_FRAMES.filter(f => f.type === 'image').map(f => f.url);
+    if (imagesToLoad.length === 0) {
+      setLoadedCount(0);
+      return;
+    }
+
+    let loaded = 0;
+    const handleImageLoad = () => {
+      loaded++;
+      setLoadedCount(loaded);
+    };
+
+    imagesToLoad.forEach(url => {
+      const img = new Image();
+      img.src = url;
+      img.onload = handleImageLoad;
+      img.onerror = handleImageLoad; // Don't block forever if one image fails
+    });
+  }, []);
 
   // Keyboard controls
   useEffect(() => {
@@ -80,7 +105,7 @@ export function IntroScreen({ onComplete }) {
 
   // Montage sequencing timer
   useEffect(() => {
-    if (phase !== 'montage') return;
+    if (phase !== 'montage' || !assetsLoaded) return;
 
     // Start playing video frames slightly in advance so cuts are instant
     if (frameIdx === 5 && frameVideoRef1.current) {
@@ -89,7 +114,7 @@ export function IntroScreen({ onComplete }) {
     if (frameIdx === 12 && frameVideoRef2.current) {
       frameVideoRef2.current.play().catch(() => { });
     }
-    
+
     // Warm-up and pre-play main video at frame 10 (hidden under montage) so it's fully running when montage ends
     if (frameIdx === 10 && mainVideoRef.current) {
       mainVideoRef.current.play().catch(() => { });
@@ -106,7 +131,7 @@ export function IntroScreen({ onComplete }) {
     }, currentFrame.duration);
 
     return () => clearTimeout(timer);
-  }, [frameIdx, phase]);
+  }, [frameIdx, phase, assetsLoaded]);
 
   // Play active video when phase changes (fallback check)
   useEffect(() => {
@@ -126,8 +151,28 @@ export function IntroScreen({ onComplete }) {
     return () => clearTimeout(timer);
   }, []);
 
+  if (!assetsLoaded) {
+    const percentage = totalAssets > 0 ? Math.round((loadedCount / totalAssets) * 100) : 100;
+    return (
+      <div className="intro-loader-container">
+        <div className="intro-loader-spinner" />
+        <div className="intro-loader-text">LOADING CINEMATIC DECK</div>
+        <div className="font-mono text-[10px] tracking-widest text-white/40 mt-1">
+          {percentage}% ({loadedCount} / {totalAssets})
+        </div>
+        {/* Elegant Gold Progress Bar */}
+        <div className="w-48 h-0.5 bg-white/10 rounded-full overflow-hidden mt-3">
+          <div
+            className="h-full bg-brand-gold transition-all duration-300 ease-out"
+            style={{ width: `${percentage}%`, backgroundColor: '#c9a96e' }}
+          />
+        </div>
+      </div>
+    );
+  }
+
   const currentFrame = MONTAGE_FRAMES[frameIdx];
-  
+
   // Detect reduced motion preference
   const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -190,7 +235,7 @@ export function IntroScreen({ onComplete }) {
           <div className="viewfinder-corner viewfinder-corner-bl" />
           <div className="viewfinder-corner viewfinder-corner-br" />
           <div className="viewfinder-crosshair" />
-          
+
           <div className="viewfinder-metadata viewfinder-meta-tl">RAW_PRVW_1080P</div>
           <div className="viewfinder-metadata viewfinder-meta-tr flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse" />
@@ -200,13 +245,13 @@ export function IntroScreen({ onComplete }) {
           <div className="viewfinder-metadata viewfinder-meta-br">
             <div className="soundwave-indicator">
               {[...Array(6)].map((_, i) => (
-                <div 
-                  key={i} 
-                  className="soundwave-bar" 
-                  style={{ 
+                <div
+                  key={i}
+                  className="soundwave-bar"
+                  style={{
                     animationDelay: `${i * 0.12}s`,
                     height: `${8 + Math.floor(Math.random() * 16)}px`
-                  }} 
+                  }}
                 />
               ))}
             </div>
@@ -222,27 +267,27 @@ export function IntroScreen({ onComplete }) {
                 className="relative py-5 px-16 flex flex-col items-center justify-center"
               >
                 {/* Elegant top line wipe */}
-                <motion.div 
+                <motion.div
                   className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/40 to-transparent"
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: 1 }}
                   exit={{ scaleX: 0 }}
                   transition={{ duration: 0.2, ease: 'easeInOut' }}
                 />
-                
-                 {/* Expanding letter-spacing text container */}
-                 <motion.div
-                   className="cinematic-flash-word"
-                   initial={{ letterSpacing: '0.15em', opacity: 0, scale: 0.9 }}
-                   animate={{ letterSpacing: '0.3em', opacity: 1, scale: 1 }}
-                   exit={{ letterSpacing: '0.45em', opacity: 0, scale: 1.05, filter: 'blur(6px)' }}
-                   transition={{ duration: 0.18, ease: 'easeOut' }}
-                 >
-                   {currentFrame.text}
-                 </motion.div>
+
+                {/* Expanding letter-spacing text container */}
+                <motion.div
+                  className="cinematic-flash-word"
+                  initial={{ letterSpacing: '0.15em', opacity: 0, scale: 0.9 }}
+                  animate={{ letterSpacing: '0.3em', opacity: 1, scale: 1 }}
+                  exit={{ letterSpacing: '0.45em', opacity: 0, scale: 1.05, filter: 'blur(6px)' }}
+                  transition={{ duration: 0.18, ease: 'easeOut' }}
+                >
+                  {currentFrame.text}
+                </motion.div>
 
                 {/* Elegant bottom line wipe */}
-                <motion.div 
+                <motion.div
                   className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/40 to-transparent"
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: 1 }}
@@ -260,43 +305,53 @@ export function IntroScreen({ onComplete }) {
             <motion.div
               key={`flash-${frameIdx}`}
               className="intro-flash-overlay"
-              initial={{ opacity: 0.5 }}
+              initial={{ opacity: 0.12 }}
               animate={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: 0.15 }}
             />
           )}
         </AnimatePresence>
 
-        {currentFrame.type === 'image' ? (
+        <AnimatePresence mode="popLayout">
           <motion.div
-            className="intro-media-container"
-            initial={{ scale: kbVariant?.scaleStart || 1, x: kbVariant?.xStart || 0, y: kbVariant?.yStart || 0 }}
-            animate={{
-              scale: kbVariant?.scaleEnd || 1,
-              x: kbVariant?.xEnd || 0,
-              y: kbVariant?.yEnd || 0,
-            }}
-            transition={prefersReducedMotion ? { duration: 0 } : { duration: Math.max(currentFrame.duration / 1000, 0.18), ease: kbVariant?.easing || [0.25,0.46,0.45,0.94] }}
+            key={frameIdx}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5, ease: 'easeInOut' }}
+            className="absolute inset-0 w-full h-full"
+            style={{ position: 'absolute', inset: 0 }}
           >
-            <img
-              key={currentFrame.url}
-              src={currentFrame.url}
-              alt=""
-              className="intro-media"
-            />
+            {currentFrame.type === 'image' ? (
+              <motion.div
+                className="intro-media-container"
+                initial={{ scale: kbVariant?.scaleStart || 1, x: kbVariant?.xStart || 0, y: kbVariant?.yStart || 0 }}
+                animate={{
+                  scale: kbVariant?.scaleEnd || 1,
+                  x: kbVariant?.xEnd || 0,
+                  y: kbVariant?.yEnd || 0,
+                }}
+                transition={prefersReducedMotion ? { duration: 0 } : { duration: currentFrame.duration / 1000, ease: 'linear' }}
+              >
+                <img
+                  src={currentFrame.url}
+                  alt=""
+                  className="intro-media"
+                />
+              </motion.div>
+            ) : (
+              <video
+                src={currentFrame.url}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="intro-media"
+                style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+              />
+            )}
           </motion.div>
-        ) : (
-          <video
-            key={currentFrame.url}
-            src={currentFrame.url}
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="intro-media"
-            style={{ objectFit: 'cover' }}
-          />
-        )}
+        </AnimatePresence>
       </div>
 
       {/* LAYER 2: Main Video Player (always mounted to prevent layout jumps/loading flags) */}
@@ -324,7 +379,7 @@ export function IntroScreen({ onComplete }) {
             if (v.duration) setVideoDuration(v.duration);
             // Warm-up outro video 1.2 seconds before the main video concludes
             if (v.duration && v.currentTime > v.duration - 1.2 && outroVideoRef.current) {
-              outroVideoRef.current.play().catch(() => {});
+              outroVideoRef.current.play().catch(() => { });
             }
           }}
           onEnded={() => {
@@ -356,7 +411,7 @@ export function IntroScreen({ onComplete }) {
                   {Math.floor((videoTime / videoDuration) * 100)}% COMPLETE
                 </span>
               </div>
-              
+
               <div className="flex flex-col gap-1">
                 <h3 className="font-playfair text-base font-bold text-white tracking-wide uppercase">
                   {caption.title}
@@ -368,9 +423,9 @@ export function IntroScreen({ onComplete }) {
 
               {/* Progress timeline bar */}
               <div className="w-full h-1 bg-white/15 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-white transition-all duration-100 ease-linear" 
-                  style={{ width: `${(videoTime / videoDuration) * 100}%` }} 
+                <div
+                  className="h-full bg-white transition-all duration-100 ease-linear"
+                  style={{ width: `${(videoTime / videoDuration) * 100}%` }}
                 />
               </div>
             </div>

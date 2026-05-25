@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a1a1f"/>
+      <stop offset="100%" stop-color="#09090d"/>
+    </linearGradient>
+    <linearGradient id="letter" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f5f5f7"/>
+      <stop offset="100%" stop-color="#a0a0aa"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background rounded square -->
+  <rect width="32" height="32" rx="7" fill="url(#bg)"/>
+
+  <!-- Subtle inner border -->
+  <rect x="0.5" y="0.5" width="31" height="31" rx="6.5" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+
+  <!-- "A" glyph — clean geometric -->
+  <path
+    d="M7 23 L11.2 10 L13.8 10 L18 23 H15.6 L14.6 20 H10.4 L9.4 23 Z M11.1 18 H13.9 L12.5 13.2 Z"
+    fill="url(#letter)"
+  />
+
+  <!-- "D" glyph — clean geometric -->
+  <path
+    d="M19.5 10 H22.5 C25.5 10 27.5 12.5 27.5 16.5 C27.5 20.5 25.5 23 22.5 23 H19.5 Z
+       M21.5 12 V21 H22.3 C24.1 21 25.3 19.3 25.3 16.5 C25.3 13.7 24.1 12 22.3 12 Z"
+    fill="url(#letter)"
+  />
+</svg>
